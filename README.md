@@ -153,8 +153,8 @@ aws s3api put-bucket-notification-configuration --bucket your-bucket-name --noti
 ```
 
 > * Please replace the **`THE-ARN-OF-AutomationFunction`** in the config file use the Arn value of the AutomationFunction. You can get the value from the deploy cli outputs or CloudFormation console.
-> 
 > * Please make sure replace the **`your-bucket-name`** in command to the bucket name you want to auto execute the convert job.
+> * **ATTENTION**: DO NOT use the source bucket as MediaConvert output target, this will cause infinite loop execution and increase your account cost.
 >
 
 For more details to use the configuration file, please see the [AWS CLI Document](https://docs.aws.amazon.com/cli/latest/reference/s3api/put-bucket-notification-configuration.html).
