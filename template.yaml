@@ -1,0 +1,347 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: VideoConverter SAM Application
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  DefaultJobTemplateName:
+    Type: String
+    Description: Name of default MediaConvert job template
+  DefaultOutputBucket:
+    Type: String
+    Description: Backet of default MediaConvert job output
+
+
+Resources:
+  InitFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import traceback
+          import cfnresponse
+
+          def handler(event, context):
+            try:
+              boto3.client('dynamodb').put_item(
+                TableName='video-converter-options',
+                Item={
+                  'S_Key': {'S': 'default-JobTemplate'},
+                  'S_Value': {'S': event['ResourceProperties']['DefaultJobTemplateName']},
+                }
+              )
+              boto3.client('dynamodb').put_item(
+                TableName='video-converter-options',
+                Item={
+                  'S_Key': {'S': 'default-OutputBucket'},
+                  'S_Value': {'S': event['ResourceProperties']['DefaultOutputBucket']},
+                }
+              )
+              boto3.client('dynamodb').put_item(
+                TableName='video-converter-options',
+                Item={
+                  'S_Key': {'S': 'MediaConvertJobRole'},
+                  'S_Value': {'S': event['ResourceProperties']['MediaConvertJobRole']},
+                }
+              )
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            except Exception as err:
+              cfnresponse.send(event, context, cfnresponse.FAILED, {
+                'error': ''.join(traceback.format_exception(None, err, err.__traceback__))
+              })
+
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 10
+  AutomationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: video_converter/
+      Handler: auto_executor.lambda_handler
+      Runtime: python3.8
+      Timeout: 15
+      Role: !GetAtt LambdaRole.Arn
+  ManualFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: video_converter/
+      Handler: manual_executor.lambda_handler
+      Runtime: python3.8
+      Timeout: 300
+      Role: !GetAtt LambdaRole.Arn
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt VideoConverterSQS.Arn
+  TaskEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: video_converter/
+      Handler: task_event.lambda_handler
+      Runtime: python3.8
+      Timeout: 15
+      Role: !GetAtt LambdaRole.Arn
+      Events:
+        EventRule:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - aws.mediaconvert
+              detail-type:
+                - MediaConvert Job State Change
+              detail:
+                status:
+                  - STATUS_UPDATE
+                  - COMPLETE
+                  - ERROR
+  VideoConverterSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: VideoConverterSQS
+  OptionDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: video-converter-options
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      AttributeDefinitions:
+        - AttributeName: S_Key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: S_Key
+          KeyType: HASH
+  TaskDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: video-converter-tasks
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      AttributeDefinitions:
+        - AttributeName: S_TaskId
+          AttributeType: S
+        - AttributeName: S_Bucket
+          AttributeType: S
+      KeySchema:
+        - AttributeName: S_TaskId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: BucketIndex
+          KeySchema:
+            - AttributeName: S_Bucket
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+  TaskItemDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: video-converter-task-items
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      AttributeDefinitions:
+        - AttributeName: S_ItemId
+          AttributeType: S
+        - AttributeName: S_Source
+          AttributeType: S
+        - AttributeName: S_TaskId
+          AttributeType: S
+        - AttributeName: S_Status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: S_ItemId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: SourceIndex
+          KeySchema:
+              - AttributeName: S_Source
+                KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+        - IndexName: TaskIndex
+          KeySchema:
+            - AttributeName: S_TaskId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: S_Status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+  InitOptionDynamoDB:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: InitFunction
+    Properties:
+      ServiceToken: !GetAtt InitFunction.Arn
+      DefaultJobTemplateName: !Ref DefaultJobTemplateName
+      DefaultOutputBucket: !Ref DefaultOutputBucket
+      MediaConvertJobRole: !GetAtt MediaConvertJobRole.Arn
+  MediaConvertJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - mediaconvert.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}JobRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}JobPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - 'mediaconvert:*'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 's3:ListAllMyBuckets'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 's3:Get*'
+                  - 's3:ListBucket'
+                Resource: !Sub arn:${AWS::Partition}:s3:::*
+              - Effect: Allow
+                Action:
+                  - 's3:Put*'
+                  - 's3:Post*'
+                Resource: !Sub arn:${AWS::Partition}:s3:::*
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}LambdaRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}LambdaPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:ReceiveMessage'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: !GetAtt VideoConverterSQS.Arn
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - 'mediaconvert:*'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 's3:ListAllMyBuckets'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 's3:Get*'
+                  - 's3:ListBucket'
+                Resource: !Sub arn:${AWS::Partition}:s3:::*
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                Resource: !GetAtt OptionDynamoDB.Arn
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                Resource: !GetAtt TaskDynamoDB.Arn
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:Query'
+                Resource: !Sub ${TaskDynamoDB.Arn}/index/*
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                Resource: !GetAtt TaskItemDynamoDB.Arn
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:Query'
+                Resource: !Sub ${TaskItemDynamoDB.Arn}/index/*
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: !GetAtt MediaConvertJobRole.Arn
+
+Outputs:
+  VideoConverterSQS:
+    Description: "SQS to manual start the video converter task"
+    Value: !Ref VideoConverterSQS
+  AutomationFunction:
+    Description: "Lambda function to handle auto converter task"
+    Value: !GetAtt AutomationFunction.Arn
+  ManualFunction:
+    Description: "Lambda function to handle manual converter task"
+    Value: !GetAtt ManualFunction.Arn
+  OptionDynamoDB:
+    Description: "DynamoDB to store options"
+    Value: !GetAtt OptionDynamoDB.Arn
+  TaskDynamoDB:
+    Description: "DynamoDB to store task information"
+    Value: !GetAtt TaskDynamoDB.Arn
+  TaskItemDynamoDB:
+    Description: "DynamoDB to store task job details"
+    Value: !GetAtt TaskItemDynamoDB.Arn
+  MediaConvertJobRole:
+    Description: "IAM Role for the application used for MediaConvert"
+    Value: !Ref MediaConvertJobRole
+  LambdaRole:
+    Description: "IAM Role for the application used for Lambda"
+    Value: !Ref LambdaRole

@@ -1,0 +1,31 @@
+{
+  "JobTemplate": "$$TEMPLATE_NAME$$",
+  "Role": "$$ROLE_ARN$$",
+  "Settings": {
+    "Inputs": [
+      {
+        "AudioSelectors": {
+          "Audio Selector 1": {
+            "Offset": 0,
+            "DefaultSelection": "NOT_DEFAULT",
+            "ProgramSelection": 1,
+            "SelectorType": "TRACK",
+            "Tracks": [
+              1
+            ]
+          }
+        },
+        "VideoSelector": {
+          "ColorSpace": "FOLLOW"
+        },
+        "FilterEnable": "AUTO",
+        "PsiControl": "USE_PSI",
+        "FilterStrength": 0,
+        "DeblockFilter": "DISABLED",
+        "DenoiseFilter": "DISABLED",
+        "TimecodeSource": "EMBEDDED",
+        "FileInput": "s3://$$OUTPUTBUCKET$$/$$KE$$"
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+    "LambdaFunctionConfigurations": [
+        {
+            "Id": "bucket-notification-config-id",
+            "LambdaFunctionArn": "THE-ARN-OF-AutomationFunction",
+            "Events": [
+                "s3:ObjectCreated:*"
+            ]
+        }
+    ]
+}

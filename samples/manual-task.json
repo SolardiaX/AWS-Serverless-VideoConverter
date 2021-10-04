@@ -1,0 +1,18 @@
+{
+  "Bucket": {
+    "DataType": "String",
+    "StringValue": "name_of_bucket"
+  },
+  "Key": {
+    "DataType": "String",
+    "StringValue": "sub_dir/the_source_video_file.avi"
+  },
+  "Filter": {
+    "DataType": "String",
+    "StringValue": "JMESPath"
+  },
+  "Force": {
+    "DataType": "String",
+    "StringValue": "false"
+  }
+}
