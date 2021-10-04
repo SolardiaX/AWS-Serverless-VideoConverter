@@ -4,7 +4,7 @@
 
 ## About
 
-VideoConverter is a open to use serverless solution that can convert video in S3 with MediaConvert. The convert job can be executed manual by message from SQS or the S3 event notification. All tasks are stored in DynamoDB and task status will be updated with MediaConvert CloudWatch event.
+VideoConverter is an open to use serverless solution that can convert video in S3 with MediaConvert. The convert job can be executed manual by message from SQS or the S3 event notification. All tasks are stored in DynamoDB and task status will be updated with MediaConvert CloudWatch event.
 
 
 
