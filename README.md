@@ -215,9 +215,17 @@ aws cloudformation delete-stack --stack-name <the-stack-name-your-deployed>
 
 ## Resources
 
-See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
+Reference documents to use and custom this application can be found at:
 
-Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond this application and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
+* [Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+* [AWS Command Line Interface Documentation](https://docs.aws.amazon.com/cli/)
+* [AWS Serverless Application Model Developer Guide](https://docs.aws.amazon.com/serverless-application-model/index.html)
+* [AWS CloudFormation User Guide](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html)
+* [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
+* [AWS MediaConvert Documentation](https://docs.aws.amazon.com/mediaconvert/)
+* [Amazon Simple Storage Service Documentation](https://docs.aws.amazon.com/s3/)
+* [Amazon Simple Queue Service Documentation](https://docs.aws.amazon.com/sqs/)
+* [Amazon DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
 
 ## Todo
 
