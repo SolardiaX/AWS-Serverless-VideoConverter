@@ -106,6 +106,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: VideoConverterSQS
+      VisibilityTimeout: 300
   OptionDynamoDB:
     Type: AWS::DynamoDB::Table
     Properties:
