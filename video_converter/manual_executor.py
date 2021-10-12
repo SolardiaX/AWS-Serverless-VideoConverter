@@ -21,7 +21,7 @@ def lambda_handler(event, _):
         key = attributes.get('Key', dict()).get('stringValue', None)
         template = attributes.get('TemplateName', dict()).get('stringValue', None)
         condition = attributes.get('Filter', dict()).get('stringValue', None)
-        force = attributes.get('Key', dict()).get('stringValue', 'False').upper() == 'TRUE'
+        force = attributes.get('Force', dict()).get('stringValue', 'False').upper() == 'TRUE'
 
         if bucket is None:
             raise ValueError('bucket is none')
