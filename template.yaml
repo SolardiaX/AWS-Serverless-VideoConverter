@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: VideoConverter SAM Application
 
-Globals:
-  Function:
-    Timeout: 3
-
 Parameters:
   DefaultJobTemplateName:
     Type: String
@@ -13,7 +9,14 @@ Parameters:
   DefaultOutputBucket:
     Type: String
     Description: Backet of default MediaConvert job output
+  LogRetentionInDays:
+    Type: Number
+    Description: Logs of Lambda retention in days (0 means always retention)
+    Default: -1
+    AllowedValues: [ -1, 7, 15, 30, 60, 90, 180 ]
 
+Conditions:
+  LogRetentionInDaysSet: !Not [!Equals [!Ref LogRetentionInDays, -1]]
 
 Resources:
   InitFunction:
@@ -59,6 +62,11 @@ Resources:
       Runtime: python3.8
       Role: !GetAtt LambdaRole.Arn
       Timeout: 10
+  InitFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${InitFunction}"
+      RetentionInDays: !If [ LogRetentionInDaysSet, !Ref LogRetentionInDays, !Ref AWS::NoValue ]
   AutomationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -67,6 +75,11 @@ Resources:
       Runtime: python3.8
       Timeout: 15
       Role: !GetAtt LambdaRole.Arn
+  AutomationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AutomationFunction}"
+      RetentionInDays: !If [ LogRetentionInDaysSet, !Ref LogRetentionInDays, !Ref AWS::NoValue ]
   ManualFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -80,6 +93,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt VideoConverterSQS.Arn
+  ManualFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ManualFunction}"
+      RetentionInDays: !If [ LogRetentionInDaysSet, !Ref LogRetentionInDays, !Ref AWS::NoValue ]
   TaskEventFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -102,6 +120,11 @@ Resources:
                   - STATUS_UPDATE
                   - COMPLETE
                   - ERROR
+  TaskEventFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${TaskEventFunction}"
+      RetentionInDays: !If [ LogRetentionInDaysSet, !Ref LogRetentionInDays, !Ref AWS::NoValue ]
   VideoConverterSQS:
     Type: AWS::SQS::Queue
     Properties:
@@ -268,7 +291,6 @@ Resources:
                 Resource: !GetAtt VideoConverterSQS.Arn
               - Effect: Allow
                 Action:
-                  - 'logs:CreateLogGroup'
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
