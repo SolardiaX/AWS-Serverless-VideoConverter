@@ -226,6 +226,7 @@ Reference documents to use and custom this application can be found at:
 * [Amazon Simple Storage Service Documentation](https://docs.aws.amazon.com/s3/)
 * [Amazon Simple Queue Service Documentation](https://docs.aws.amazon.com/sqs/)
 * [Amazon DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
+* [JMEPath Documentation](https://jmespath.org/)
 
 ## Todo
 
