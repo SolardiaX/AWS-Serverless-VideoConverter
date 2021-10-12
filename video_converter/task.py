@@ -97,12 +97,13 @@ class TaskItem:
         """ Task Id of the item """
         self.status = None
         """ Status of the item, refer to the job status of MediaConvert """
-        self.process = 0
-        """ Process of the item, refer to the job process of MediaConvert """
+        self.progress = 0
+        """ Progress of the item, refer to the job progress of MediaConvert """
         self.created_at = None
         """ Datetime in string the item job created at """
         self.finished_at = None
         """ Datetime in string the item job finished at """
+        self.error = None
 
     def as_dict(self):
         """ A dict of task item """
@@ -113,7 +114,8 @@ class TaskItem:
             'S_Status': self.status,
             'S_CreatedAt': self.created_at,
             'S_FinishedAt': self.finished_at,
-            'N_Process': self.process,
+            'N_Progress': self.progress,
+            'S_Error': self.error,
         }
 
     @classmethod
@@ -125,9 +127,10 @@ class TaskItem:
         task.source = item['S_Source']
         task.taskid = item['S_TaskId']
         task.status = item.get('S_Status', None)
-        task.process = item.get('N_Process', 0)
+        task.progress = item.get('N_Progress', 0)
         task.created_at = item.get('S_CreatedAt', None)
         task.finished_at = item.get('S_FinishedAt', None)
+        task.error = item.get('S_Error', None)
 
         return task
 
@@ -199,7 +202,7 @@ def set_task_total(taskid: str, total: int):
         UpdateExpression='SET N_Total = :total, S_ExecutedAt = :at',
         ExpressionAttributeValues={
             ':total': total,
-            ':at': datetime.now().strftime('%Y-%m-%d %H:%M:%S%z')
+            ':at': datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S%z')
         },
         ReturnValues='NONE'
     )
@@ -247,35 +250,37 @@ def increase_task_error_counter(taskid: str):
     )
 
 
-def update_taskitem_status(itemid: str, status: str):
+def update_taskitem_status(itemid: str, status: str, error: str = None):
     """
     Update the task item status
     Args:
         itemid: The id of Task item
         status: The status to update to
+        error: The error infomation if has
     """
     db.Table(taskitem_table_name).update_item(
         Key={'S_ItemId': itemid},
-        UpdateExpression='SET S_Status = :status, S_FinishedAt = :at',
+        UpdateExpression='SET S_Status = :status, S_FinishedAt = :at, S_Error = :error',
         ExpressionAttributeValues={
             ':status': status,
-            ':at': datetime.now().strftime('%Y-%m-%d %H:%M:%S%z')
+            ':at': datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S%z'),
+            ':error': error,
         },
         ReturnValues='NONE'
     )
 
 
-def update_taskitem_process(itemid: str, process: int):
+def update_taskitem_progress(itemid: str, progress: int):
     """
-    Update the task item process
+    Update the task item progress
     Args:
         itemid: The id of Task item
-        process: The process of job with MediaConvert
+        progress: The progress of job with MediaConvert
     """
     db.Table(taskitem_table_name).update_item(
         Key={'S_ItemId': itemid},
-        UpdateExpression='SET N_Process = :process',
-        ExpressionAttributeValues={':status': process},
+        UpdateExpression='SET N_Progress = :progress',
+        ExpressionAttributeValues={':progress': progress},
         ReturnValues='NONE'
     )
 
@@ -333,52 +338,57 @@ def create_converter_job(taskid: str, bucket: str, key: str, template_name: str)
         key: Key of the source in bucket
         template_name: The template name used to create MediaConvert job
     """
-    source = get_source(bucket, key)
-
-    with open('./task_params.json', 'r') as f:
-        params = json.load(f)
-        params['Role'] = _get_options('MediaConvertJobRole')
-        params['JobTemplate'] = template_name
-        params['Settings']['Inputs'][0]['FileInput'] = source
-
-    template_params = converter.get_job_template(Name=template_name)
-    dest = template_params['JobTemplate']['Settings']['OutputGroups'][0]['OutputGroupSettings'].get('Destination', None)
-
-    if dest is None:
-        dest = _get_options('%s-OutputBucket' % bucket)
-        if dest is None:
-            dest = _get_options('default-OutputBucket')
-
-        sub = ''
-        if '/' in key:
-            sub = key[0:key.rindex('/') + 1]
-
-        params['Settings']['OutputGroups'] = [{
-            'OutputGroupSettings': {
-                'Type': 'FILE_GROUP_SETTINGS',
-                'FileGroupSettings': {
-                    'Destination': 's3://%s/%s' % (dest, sub)
-                },
-            }
-        }]
 
     increase_task_running_counter(taskid)
+    source = get_source(bucket, key)
+    dest = None
+    error = None
 
     # noinspection PyBroadException
     try:
+        with open('./task_params.json', 'r') as f:
+            params = json.load(f)
+            params['Role'] = _get_options('MediaConvertJobRole')
+            params['JobTemplate'] = template_name
+            params['Settings']['Inputs'][0]['FileInput'] = source
+
+        template_params = converter.get_job_template(Name=template_name)
+        dest = template_params['JobTemplate']['Settings']['OutputGroups'][0]['OutputGroupSettings'].get(
+            'Destination', None
+        )
+
+        if dest is None:
+            dest = _get_options('%s-OutputBucket' % bucket)
+            if dest is None:
+                dest = _get_options('default-OutputBucket')
+
+            sub = ''
+            if '/' in key:
+                sub = key[0:key.rindex('/') + 1]
+
+            params['Settings']['OutputGroups'] = [{
+                'OutputGroupSettings': {
+                    'Type': 'FILE_GROUP_SETTINGS',
+                    'FileGroupSettings': {
+                        'Destination': 's3://%s/%s' % (dest, sub)
+                    },
+                }
+            }]
+
         resp = converter.create_job(**params)
 
         status = 'RUNNING'
         itemid = resp['Job']['Id']
         created_at = resp['Job']['CreatedAt'].strftime('%Y-%m-%d %H:%M:%S%z')
         finished_at = None
-    except:
+    except Exception as err:
+        error = str(err)
         increase_task_error_counter(taskid)
 
         status = 'ERROR'
         itemid = uuid.uuid4().hex
-        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S%z')
-        finished_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S%z')
+        created_at = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S%z')
+        finished_at = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S%z')
 
     db.Table(taskitem_table_name).put_item(
         Item={
@@ -387,9 +397,10 @@ def create_converter_job(taskid: str, bucket: str, key: str, template_name: str)
             'S_Target': get_source(dest, key),
             'S_TaskId': taskid,
             'S_Status': status,
-            'N_Process': 0,
+            'N_Progress': 0,
             'S_CreatedAt': created_at,
             'S_FinishedAt': finished_at,
+            'S_Error': error,
         },
         ReturnValues='NONE')
 
