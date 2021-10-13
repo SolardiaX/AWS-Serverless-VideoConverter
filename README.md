@@ -189,7 +189,7 @@ The attributes in manual-task.json are includes:
 
   For example, to filter files with date, the expression can be:
 
-  ​	`Contents[?to_string(LastModified)>='2021-01-01 00:00:00+00:00'][]`
+  ​	`Contents[?to_string(LastModified)>='\"2021-01-01 00:00:00+00:00\"'][]`
 
   This attribute is optional, if you don’t use it, just remove the whole entry.
 
