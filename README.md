@@ -1,17 +1,19 @@
-# VideoConverter
+# AWS Serverless VideoConverter
 
 ![diagram](docs/diagram.png)
 
 ## About
 
-VideoConverter is an open to use serverless solution that can convert video in S3 with MediaConvert. The convert job can be executed manual by message from SQS or the S3 event notification. All tasks are stored in DynamoDB and task status will be updated with MediaConvert CloudWatch event.
+AWS Serverless VideoConverter is an open to use serverless solution that can convert video in S3 with MediaConvert. The convert job can be executed manual by message from SQS or the S3 event notification. All tasks are stored in DynamoDB and task status will be updated with MediaConvert CloudWatch event.
 
 
 
 This project contains source code and supporting files that can deploy with the SAM CLI. It includes the following files and folders.
 
 - video_transfer - Source codes for the application's Lambda function.
-- docs - Documents of how to deploy & use.
+- docs - Addon documents, such as diagram, media info output structure, etc..
+- events -Example events used for local debug.
+- layers -Lambda layers of application.
 - samples - Sample file can used for CLI to config your runtime environment.
 - template.yaml - A template that defines the application's AWS resources.
 
@@ -22,7 +24,7 @@ These resources are defined in the `template.yaml` file in this project, your ca
 
 ## Develop
 
-This application’s codes are using Python3, you can use any favor tools to edit them.
+This application’s codes are using Python3, you can use any favor tool to code with them.
 
 If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit. See the following links to get started.
 
@@ -42,7 +44,7 @@ If you prefer to use an integrated development environment (IDE) to build and te
 
 The resources and codes are list bellow, more details can check the comments in files.
 
-```rst
+```shell
 .
 ├── template.yml  # The SAM template files, includes all required AWS resources defined.
 ├── video_converter
@@ -50,8 +52,8 @@ The resources and codes are list bellow, more details can check the comments in 
 │   └── manual_executor.py # The lambda function with SQS message and start converter job(s)
 │   └── requirement.txt    # The python pip install requirements
 │   └── task.py            # The core function to handle task and converter job
-│   └── task_event.py      # The lambda function with MediaConvert CloudWatch rule to update task status
-│   └── task_params.py     # The json params used to create a MediaConvert job 
+│   └── task_event.py      # The lambda function to handle MediaConvert event to update task status
+│   └── task_params.py     # The json params used to create a MediaConvert job
 ```
 
 ## Deploy
@@ -77,10 +79,11 @@ For more information, please see the [AWS CLI document](https://docs.aws.amazon.
 To deploy your application for the first time, run the following in your shell:
 
 ```bash
+sam build
 sam deploy --guided --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
 ```
 
-The command will package and deploy your application to AWS, with a series of prompts:
+The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
 
 * **Stack Name**
 
@@ -175,11 +178,11 @@ The attributes in manual-task.json are includes:
 
 * **Bucket**
 
-  The name of bucket which the task’s source video file(s) in. This attribute is *MANDATORY*.
+  The name of bucket which the task’s source video file(s) in. This attribute is *REQUIRED*.
 
 * **Key**
 
-  The single s3 object key of the source video. 
+  The s3 object key of the source video. If the key string ends with '`/`', will be using as a directory to look up objects in.
 
   This attribute is optional, if you don’t use it, just remove the whole entry.
 
@@ -195,7 +198,7 @@ The attributes in manual-task.json are includes:
 
 * **Force**
 
-  Force to create task even it is already exists. Default is `false`.
+  Force creating task even it is already exists. Default is `false`.
 
   This attribute value can be `true` or `false`.
 
@@ -203,12 +206,45 @@ The attributes in manual-task.json are includes:
 >
 > The lambda functions have default timeout setting, please make sure you never reach the limit. You can check the `template.yaml` to modify them base your requirement.
 
+## Debug
+
+The application can be debug locally with the `sam ` command. To debug you should build it with the `sam build` command first.
+
+```bash
+sam build
+```
+
+The SAM CLI installs dependencies defined in `video_converter/requirements.txt`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+
+Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
+
+Run functions locally and invoke them with the `sam local invoke` command.
+
+```bash
+sam local invoke ManualFunction --event events/manualfunction.json
+```
+
+## Using MediaInfo
+
+The application contains a layer which includes [MediaInfo](https://mediaarea.net/en/MediaInfo) runtime, it’s can be used to detect the media information in lambda. For example:
+
+```python
+from mediainfo import get_media_info
+
+mi = get_media_info(bucket, key)
+for track in mi.tracks:
+		if track.track_type == 'Video':
+				logger.info('Video resolution is %d x %d' % (track.width, track.high))
+```
+
+All lambda functions (exclude InitFunction) are referred this layer by default.
+
 ## Cleanup
 
 To delete the application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
 
 ```bash
-aws cloudformation delete-stack --stack-name <the-stack-name-your-deployed>
+aws cloudformation delete-stack --stack-name <the-stack-name-you-deployed>
 ```
 
 > **NOTES**: This command just delete the application stack only, all converted jobs and output files are keep remained! 
@@ -228,6 +264,3 @@ Reference documents to use and custom this application can be found at:
 * [Amazon DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
 * [JMEPath Documentation](https://jmespath.org/)
 
-## Todo
-
-- [ ] Use Athena & QuickInsight to display task reports

@@ -3,6 +3,7 @@
 import logging
 import traceback
 from task import *
+# from mediainfo import get_media_info
 
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,6 +49,12 @@ def lambda_handler(event, _):
                 key = f['Key']
                 if key.endswith('/'):
                     continue
+
+                # get video resolution by mediainfo
+                # mi = get_media_info(bucket, key)
+                # for track in mi.tracks:
+                #     if track.track_type == 'Video':
+                #         logger.info('Video resolution is %d x %d' % (track.width, track.high))
 
                 logger.info('Job recieved, source - %s' % get_source(bucket, key))
 

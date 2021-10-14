@@ -19,6 +19,11 @@ Conditions:
   LogRetentionInDaysSet: !Not [!Equals [!Ref LogRetentionInDays, -1]]
 
 Resources:
+  MediaInfoLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: MediaInfoLayer
+      ContentUri: layers/MediaInfo_CLI_20.08_Lambda.zip
   InitFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -75,6 +80,8 @@ Resources:
       Runtime: python3.8
       Timeout: 15
       Role: !GetAtt LambdaRole.Arn
+      Layers:
+        - Ref: MediaInfoLayer
   AutomationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -93,6 +100,8 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt VideoConverterSQS.Arn
+      Layers:
+        - Ref: MediaInfoLayer
   ManualFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -120,6 +129,8 @@ Resources:
                   - STATUS_UPDATE
                   - COMPLETE
                   - ERROR
+      Layers:
+        - Ref: MediaInfoLayer
   TaskEventFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
