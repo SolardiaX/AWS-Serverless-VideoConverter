@@ -4,7 +4,7 @@
 
 ## About
 
-AWS Serverless VideoConverter is an open to use serverless solution that can convert video in S3 with MediaConvert. The convert job can be executed manual by message from SQS or the S3 event notification. All tasks are stored in DynamoDB and task status will be updated with MediaConvert CloudWatch event.
+AWS Serverless VideoConverter is an open to use solution that can convert video in S3 with MediaConvert. The converter job can be executed manually by queue from SQS or S3 event notification. All tasks are stored in DynamoDB and status will be auto updated with MediaConvert CloudWatch event.
 
 
 
@@ -70,7 +70,7 @@ To use the SAM CLI, you need the following tools.
 
 > To deploy this application you must have a AKSK with IAM role has full access to Lambda, DynamoDB and SQS.
 
-Before use the SAM CLI, you should setup you aws cli credential first, run the following in your shell:
+Before use the SAM CLI, you should set up you aws cli credential first, run the following in your shell:
 
 ```bash
 aws configure
@@ -117,7 +117,7 @@ After success deployed, you can config the application by set/update the items i
 
 The options in table must have two fields, `Key` and `Value`. 
 
-Currently you can set following options use special keys:
+Currently, you can set following options use special keys:
 
 * **MediaConvertRole**
 
@@ -129,7 +129,7 @@ Currently you can set following options use special keys:
 
 * **default-OutputBucket**
 
-  The default bucket used for MediaConvert job output. This is used when you not set a output for your task.
+  The default bucket used for MediaConvert job output. This is used when you not set an output for your task.
 
   To use this option, the `bucket` must exists.
   
@@ -137,7 +137,7 @@ Currently you can set following options use special keys:
 
   The bucket MediaConvert job template name used to create converter job. This is used when the job is auto executed from S3 notification.
 
-  `bucket` must be the same as your S3 bucket name with case sensitive.
+  `bucket` must be the same as your S3 bucket name with case-sensitive.
   
   If this option not exists, the `default-JobTemplateName` will used as default.
   
@@ -145,7 +145,7 @@ Currently you can set following options use special keys:
 
   The bucket used for MediaConvert job output for a special bucket. This is used when the job is auto executed from S3 notification.
 
-  `bucket` must be the same as your S3 bucket name with case sensitive.
+  `bucket` must be the same as your S3 bucket name with case-sensitive.
 
   If this option not exists, the `default-OutputBucket` will used as default.
 
@@ -157,7 +157,7 @@ To make the job auto executed when a new video file put in your S3 bucket, you c
 aws s3api put-bucket-notification-configuration --bucket your-bucket-name --notification-configuration file://samples/bucket-notification-config.json
 ```
 
-> * Please replace the **`THE-ARN-OF-AutomationFunction`** in the config file use the Arn value of the AutomationFunction. You can get the value from the deploy cli outputs or CloudFormation console.
+> * Please replace the **`THE-ARN-OF-AutomationFunction`** in the config file use the Arn value of the AutomationFunction. You can get the value from the deployment cli outputs or CloudFormation console.
 > * Please make sure replace the **`your-bucket-name`** in command to the bucket name you want to auto execute the convert job.
 > * **ATTENTION**: DO NOT use the source bucket as MediaConvert output target, this will cause infinite loop execution and increase your account cost.
 >
@@ -210,7 +210,7 @@ The attributes in manual-task.json are includes:
 
 ## Debug
 
-The application can be debug locally with the `sam ` command. To debug you should build it with the `sam build` command first.
+The application can debug locally with the `sam ` command. To debug you should build it with the `sam build` command first.
 
 ```bash
 sam build
@@ -228,7 +228,7 @@ sam local invoke ManualFunction --event events/manualfunction.json
 
 ## Using MediaInfo
 
-The application contains a layer which includes [MediaInfo](https://mediaarea.net/en/MediaInfo) runtime, it’s can be used to detect the media information in lambda. For example:
+The application contains a layer which includes [MediaInfo](https://mediaarea.net/en/MediaInfo) runtime, it can be used to detect the media information in lambda. For example:
 
 ```python
 from mediainfo import get_media_info
