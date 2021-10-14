@@ -1,0 +1,22 @@
+{
+  "version": "0",
+  "id": "187ec91d-5aae-8128-8aab-aca980c4b3e6",
+  "detail-type": "MediaConvert Job State Change",
+  "source": "aws.mediaconvert",
+  "account": "account-id",
+  "time": "2021-10-10T12:12:12Z",
+  "region": "region",
+  "resources": [
+    "arn:partion:mediaconvert:region:account-id:jobs/jobs-id"
+  ],
+  "detail": {
+    "timestamp": 1634208602614,
+    "accountId": "account-id",
+    "queue": "arn:partion:mediaconvert:region:account-id:queues/Default",
+    "jobId": "jobs-id",
+    "status": "ERROR",
+    "errorCode": 1401,
+    "errorMessage": "Unable to write to output file [s3://test/simple.mp4]: [Failed to write data: Access Denied]",
+    "userMetadata": {}
+  }
+}

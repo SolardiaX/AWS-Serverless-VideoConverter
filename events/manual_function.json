@@ -1,0 +1,46 @@
+{
+  "Records": [
+    {
+      "messageId": "56e7c008-7d19-483a-96fd-fd431df662f2",
+      "receiptHandle": "AQEBRSt0CK3VoHv/J+",
+      "body": "create task",
+      "attributes": {
+        "ApproximateReceiveCount": "2",
+        "SentTimestamp": "1634190753116",
+        "SenderId": "AID123YNINPPRIOXYZWR7",
+        "ApproximateFirstReceiveTimestamp": "1634190753121"
+      },
+      "messageAttributes": {
+        "Bucket": {
+          "stringValue": "the-bucket-name-of-manaul-task",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "Filter": {
+          "stringValue": "Contents[?to_string(LastModified)>='\"2016-12-27 08:05:37+00:00\"' && ends_with(Key, 'mp4')][]",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "Force": {
+          "stringValue": "true",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "Key": {
+          "stringValue": "sub-dir/",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        }
+      },
+      "md5OfMessageAttributes": "aad99d4435995eff73ce8fb8c0353919",
+      "md5OfBody": "940928ab55e0f75250a3c7210cc23488",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:partion:sqs:region:account-id:VideoConverterSQS",
+      "awsRegion": "region"
+    }
+  ]
+}

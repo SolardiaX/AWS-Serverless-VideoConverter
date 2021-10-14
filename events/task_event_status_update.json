@@ -1,0 +1,40 @@
+{
+  "version": "0",
+  "id": "8329a241-51a0-452f-648a-45811af6f6be",
+  "detail-type": "MediaConvert Job State Change",
+  "source": "aws.mediaconvert",
+  "account": "account-id",
+  "time": "2021-10-10T12:12:12Z",
+  "region": "region",
+  "resources": [
+    "arn:partion:mediaconvert:region:account-id:jobs/jobs-id"
+  ],
+  "detail": {
+    "timestamp": 1633960154227,
+    "accountId": "account-id",
+    "queue": "arn:partion:mediaconvert:region:account-id:queues/Default",
+    "jobId": "jobs-id",
+    "status": "STATUS_UPDATE",
+    "userMetadata": {},
+    "framesDecoded": 3316,
+    "jobProgress": {
+      "phaseProgress": {
+        "PROBING": {
+          "status": "COMPLETE",
+          "percentComplete": 100
+        },
+        "TRANSCODING": {
+          "status": "PROGRESSING",
+          "percentComplete": 2
+        },
+        "UPLOADING": {
+          "status": "PENDING",
+          "percentComplete": 0
+        }
+      },
+      "jobPercentComplete": 7,
+      "currentPhase": "TRANSCODING",
+      "retryCount": 0
+    }
+  }
+}
