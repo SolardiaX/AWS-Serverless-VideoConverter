@@ -5,6 +5,9 @@ import json
 import uuid
 from datetime import datetime
 
+import urllib3
+urllib3.disable_warnings()  # disable InsecureRequestWarning
+
 task_table_name = 'video-converter-tasks'
 taskitem_table_name = 'video-converter-task-items'
 options_table_name = 'video-converter-options'
