@@ -42,14 +42,16 @@ If you prefer to use an integrated development environment (IDE) to build and te
 
 
 
-The resources and codes are list bellow, more details can check the comments in files.
+The main resources and codes are list bellow, more details can check the comments in sources.
 
 ```shell
 .
 ├── template.yml  # The SAM template files, includes all required AWS resources defined.
 ├── video_converter
+│   └── __init__.py
 │   ├── auto_executor.py   # The lambda function with S3 notification and start a converter job
 │   └── manual_executor.py # The lambda function with SQS message and start converter job(s)
+│   └── mediainfo.py       # The helper classes for mediainfo 
 │   └── requirement.txt    # The python pip install requirements
 │   └── task.py            # The core function to handle task and converter job
 │   └── task_event.py      # The lambda function to handle MediaConvert event to update task status
