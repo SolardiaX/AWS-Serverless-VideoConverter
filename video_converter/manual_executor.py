@@ -36,12 +36,19 @@ def lambda_handler(event, _):
         task = create_task(taskid, bucket, key, condition, template)
         total = 0
 
-        if not task.key:
+        if not task.key or task.key.endswith('/'):
             client = boto3.client('s3').get_paginator('list_objects_v2')
-            files = client.paginate(Bucket=task.bucket).search(condition if condition is not None else 'Contents[]')
+            if not task.key:
+                paginator = client.paginate(Bucket=task.bucket)
+            else:
+                paginator = client.paginate(Bucket=task.bucket, Prefix=task.key)
+            files = paginator.search(condition if condition is not None else 'Contents[]')
 
             for f in files:
                 key = f['Key']
+                if key.endswith('/'):
+                    continue
+
                 logger.info('Job recieved, source - %s' % get_source(bucket, key))
 
                 if not key.endswith('/'):
@@ -69,6 +76,8 @@ def lambda_handler(event, _):
         logger.info('Manual task started, total job - %d' % total)
     except Exception as err:
         error = ''.join(traceback.format_exception(None, err, err.__traceback__))
+
+        # TODO log error to dynamodb
 
         logger.error("Manual task executed with error - " + error)
         return {'status': 400, 'event': event, 'message': error}
