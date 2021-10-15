@@ -235,8 +235,8 @@ from mediainfo import get_media_info
 
 mi = get_media_info(bucket, key)
 for track in mi.tracks:
-		if track.track_type == 'Video':
-				logger.info('Video resolution is %d x %d' % (track.width, track.high))
+    if track.track_type == 'Video':
+        logger.info('Video resolution is %d x %d' % (track.width, track.high))
 ```
 
 All lambda functions (exclude InitFunction) are referred this layer by default.
