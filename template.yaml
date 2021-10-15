@@ -145,9 +145,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: video-converter-options
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: S_Key
           AttributeType: S
@@ -158,9 +156,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: video-converter-tasks
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: S_TaskId
           AttributeType: S
@@ -176,16 +172,11 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
   TaskItemDynamoDB:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: video-converter-task-items
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: S_ItemId
           AttributeType: S
@@ -205,27 +196,18 @@ Resources:
                 KeyType: HASH
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
         - IndexName: TaskIndex
           KeySchema:
             - AttributeName: S_TaskId
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
         - IndexName: StatusIndex
           KeySchema:
             - AttributeName: S_Status
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
   InitOptionDynamoDB:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: InitFunction
