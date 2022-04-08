@@ -20,7 +20,7 @@ This project contains source code and supporting files that can deploy with the 
 
 
 The application uses several AWS resources, including Lambda functions, DynamoDB tables and SQS by default.
-These resources are defined in the `template.yaml` file in this project, your can as your wish.
+These resources are defined in the `template.yaml` file in this project, your can modify it as your wish.
 
 ## Develop
 
